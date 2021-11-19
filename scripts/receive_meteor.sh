@@ -47,17 +47,23 @@ AUDIO_FILE_BASE="${METEOR_AUDIO_OUTPUT}/${FILENAME_BASE}"
 IMAGE_FILE_BASE="${IMAGE_OUTPUT}/${FILENAME_BASE}"
 IMAGE_THUMB_BASE="${IMAGE_OUTPUT}/thumb/${FILENAME_BASE}"
 
-in_mem=true
-SYSTEM_MEMORY=$(free -m | awk '/^Mem:/{print $2}')
-if [ "$SYSTEM_MEMORY" -lt 2000 ]; then
+# check if there is enough free memory to store pass on RAM
+FREE_MEMORY=$(free -m | grep Mem | awk '{print $7}')
+if [ "$FREE_MEMORY" -lt $METEOR_M2_MEMORY_TRESHOLD ]; then
   log "The system doesn't have enough space to store a Meteor pass on RAM" "INFO"
+  log "Free : ${FREE_MEMORY} ; Required : ${METEOR_M2_MEMORY_TRESHOLD}" "INFO"
   RAMFS_AUDIO_BASE="${METEOR_AUDIO_OUTPUT}/${FILENAME_BASE}"
   in_mem=false
+else
+  log "The system have enough space to store a Meteor pass on RAM" "INFO"
+  log "Free : ${FREE_MEMORY} ; Required : ${METEOR_M2_MEMORY_TRESHOLD}" "INFO"
+  in_mem=true
 fi
 
 FLIP=""
-if [ "$FLIP_METEOR_IMG" == "true" ]; then
-  log "I'll flip this image pass because FLIP_METEOR_IMG is set to true" "INFO"
+log "Direction $PASS_DIRECTION" "INFO"
+if [ "$PASS_DIRECTION" == "Northbound" ] && [ "$FLIP_METEOR_IMG" == "true" ]; then
+  log "I'll flip this image pass because FLIP_METEOR_IMG is set to true and PASS_DIRECTION is Northbound" "INFO"
   FLIP="-rotate 180"
 fi
 
@@ -108,15 +114,15 @@ if [ "$METEOR_RECEIVER" == "rtl_fm" ]; then
 
   log "Demodulation in progress (QPSK)" "INFO"
   qpsk_file="${NOAA_HOME}/tmp/meteor/${FILENAME_BASE}.qpsk"
-  ${AUDIO_PROC_DIR}/meteor_demodulate_qpsk.sh "${qpsk_file}" "${RAMFS_AUDIO_BASE}.wav" >> $NOAA_LOG 2>&1
+  ${AUDIO_PROC_DIR}/meteor_demodulate_qpsk.sh "${RAMFS_AUDIO_BASE}.wav" "${qpsk_file}" >> $NOAA_LOG 2>&1
 
   if [[ "${PRODUCE_SPECTROGRAM}" == "true" ]]; then
     log "Producing spectrogram" "INFO"
     spectrogram=1
     spectro_text="${capture_start} @ ${SAT_MAX_ELEVATION}°"
-    ${IMAGE_PROC_DIR}/spectrogram.sh "${RAMFS_AUDIO_BASE}.wav" "${IMAGE_FILE_BASE}-spectrogram.png" "${SAT_NAME}" spectro_text >> $NOAA_LOG 2>&1
+    ${IMAGE_PROC_DIR}/spectrogram.sh "${AUDIO_FILE_BASE}.wav" "${IMAGE_FILE_BASE}-spectrogram.png" "${SAT_NAME}" "${spectro_text}" >> $NOAA_LOG 2>&1
     ${IMAGE_PROC_DIR}/thumbnail.sh 300 "${IMAGE_FILE_BASE}-spectrogram.png" "${IMAGE_THUMB_BASE}-spectrogram.png" >> $NOAA_LOG 2>&1
-  fi
+   fi
 
   if [[ "${PRODUCE_POLAR_AZ_EL}" == "true" ]]; then
     log "Producing polar graph of azimuth and elevation for pass" "INFO"
@@ -153,6 +159,12 @@ if [ "$METEOR_RECEIVER" == "rtl_fm" ]; then
     ${IMAGE_PROC_DIR}/thumbnail.sh 300 "${IMAGE_FILE_BASE}-polar-direction.png" "${IMAGE_THUMB_BASE}-polar-direction.png"
   fi
 
+  # how are we about memory usage at this point ?
+  FREE_MEMORY=$(free -m | grep Mem | awk '{print $4}')
+  AVAILABLE_MEMORY=$(free -m | grep Mem | awk '{print $7}')
+  RAMFS_USAGE=$(du -sh ${RAMFS_AUDIO} | awk '{print $1}')
+  log "Free memory : ${FREE_MEMORY} ; Available memory : ${AVAILABLE_MEMORY} ; Total RAMFS usage : ${RAMFS_USAGE}" "INFO"
+
   if [ "$DELETE_AUDIO" = true ]; then
     log "Deleting audio files" "INFO"
     rm "${RAMFS_AUDIO_BASE}.wav"
@@ -166,6 +178,8 @@ if [ "$METEOR_RECEIVER" == "rtl_fm" ]; then
 
   log "Decoding in progress (QPSK to BMP)" "INFO"
   ${IMAGE_PROC_DIR}/meteor_decode_qpsk.sh "${qpsk_file}" "${AUDIO_FILE_BASE}" >> $NOAA_LOG 2>&1
+  
+  sleep 10
 
   rm "${qpsk_file}"
 
@@ -177,6 +191,7 @@ if [ "$METEOR_RECEIVER" == "rtl_fm" ]; then
     else
       log "I got a successful ${FILENAME_BASE}.dec file. Creating false color image" "INFO"
       ${IMAGE_PROC_DIR}/meteor_false_color_decode.sh "${AUDIO_FILE_BASE}.dec" "${IMAGE_FILE_BASE}-122" >> $NOAA_LOG 2>&1
+	  $CONVERT $FLIP "${IMAGE_FILE_BASE}-122.bmp" "${IMAGE_FILE_BASE}-122.bmp" >> $NOAA_LOG 2>&1
     fi
 
     log "Rectifying image to adjust aspect ratio" "INFO"
@@ -271,6 +286,8 @@ elif [ "$METEOR_RECEIVER" == "gnuradio" ]; then
 
   log "Decoding in progress (Bitstream to BMP)" "INFO"
   ${IMAGE_PROC_DIR}/meteor_decode_bitstream.sh "${RAMFS_AUDIO_BASE}.s" "${RAMFS_AUDIO_BASE}" >> $NOAA_LOG 2>&1
+  
+  sleep 2
 
   if [ "$DELETE_AUDIO" = true ]; then
     log "Deleting audio files" "INFO"

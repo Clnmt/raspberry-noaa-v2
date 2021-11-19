@@ -1,7 +1,8 @@
 #!/bin/bash
 #
-# Purpose: Similar to HVC, but with blue water and with colours more indicative of
-#          land temperatures. Colors for precipitation.
+# Purpose: NOAA hurricane enhancement option. Highlights certain temperatures in the eye 
+#	   and eye wall of the storm system which are known to be related to the intensity 
+#	   of the hurricane. This enhancement option is temperature normalised.
 #
 # Input parameters:
 #   1. Map overlap file
@@ -9,7 +10,7 @@
 #   3. Output .jpg file
 #
 # Example:
-#   ./noaa_hvct_precip.sh /path/to/map_overlay.png /path/to/input.wav /path/to/output.jpg
+#   ./noaa_msa.sh /path/to/map_overlay.png /path/to/input.wav /path/to/output.jpg
 
 # import common lib and settings
 . "$HOME/.noaa-v2.conf"
@@ -35,4 +36,4 @@ if [ "${NOAA_INTERPOLATE}" == "true" ]; then
 fi
 
 # produce the output image
-$WXTOIMG -o -m "${MAP_OVERLAY}" ${extra_args} -e "HVCT-precip" "${INPUT_WAV}" "${OUTPUT_IMAGE}"
+$WXTOIMG -o -m "${MAP_OVERLAY}" ${extra_args} -e "BD" "${INPUT_WAV}" "${OUTPUT_IMAGE}"

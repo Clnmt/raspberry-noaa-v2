@@ -1,7 +1,8 @@
 #!/bin/bash
 #
-# Purpose: Similar to HVC, but with blue water and with colours more indicative of
-#          land temperatures. Colors for precipitation.
+# Purpose: NOAA colour IR contrast enhancement option. Greatly increases contrast in the darker land/sea 
+# 	   regions and colours the cold cloud tops. Allows fine detail in land and sea to be seen and provides 
+#	   a very readable indication of cloud top tempera- tures. This enhancement option is temperature normalised.
 #
 # Input parameters:
 #   1. Map overlap file
@@ -9,7 +10,7 @@
 #   3. Output .jpg file
 #
 # Example:
-#   ./noaa_hvct_precip.sh /path/to/map_overlay.png /path/to/input.wav /path/to/output.jpg
+#   ./noaa_msa.sh /path/to/map_overlay.png /path/to/input.wav /path/to/output.jpg
 
 # import common lib and settings
 . "$HOME/.noaa-v2.conf"
@@ -35,4 +36,4 @@ if [ "${NOAA_INTERPOLATE}" == "true" ]; then
 fi
 
 # produce the output image
-$WXTOIMG -o -m "${MAP_OVERLAY}" ${extra_args} -e "HVCT-precip" "${INPUT_WAV}" "${OUTPUT_IMAGE}"
+$WXTOIMG -o -m "${MAP_OVERLAY}" ${extra_args} -e "NO" "${INPUT_WAV}" "${OUTPUT_IMAGE}"

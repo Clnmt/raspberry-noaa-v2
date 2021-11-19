@@ -1,7 +1,9 @@
 #!/bin/bash
 #
-# Purpose: Similar to HVC, but with blue water and with colours more indicative of
-#          land temperatures. Colors for precipitation.
+# Purpose : The modified NOAA WV curve is used for the 6.7 micron water vapor channel (CH3) on GOES. 
+#	    The only temperature range that is enhanced is between -5C and -90C. 
+#	    Temperatures colder than -90C are shown as white, and temperatures warmer than -5C are displayed as black. 
+# 	    This enhancement option is temperature normalised. (See also WV-old).
 #
 # Input parameters:
 #   1. Map overlap file
@@ -9,7 +11,7 @@
 #   3. Output .jpg file
 #
 # Example:
-#   ./noaa_hvct_precip.sh /path/to/map_overlay.png /path/to/input.wav /path/to/output.jpg
+#   ./noaa_msa.sh /path/to/map_overlay.png /path/to/input.wav /path/to/output.jpg
 
 # import common lib and settings
 . "$HOME/.noaa-v2.conf"
@@ -35,4 +37,4 @@ if [ "${NOAA_INTERPOLATE}" == "true" ]; then
 fi
 
 # produce the output image
-$WXTOIMG -o -m "${MAP_OVERLAY}" ${extra_args} -e "HVCT-precip" "${INPUT_WAV}" "${OUTPUT_IMAGE}"
+$WXTOIMG -o -m "${MAP_OVERLAY}" ${extra_args} -e "WV" "${INPUT_WAV}" "${OUTPUT_IMAGE}"
